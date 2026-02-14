@@ -167,30 +167,6 @@ const pluginCSS = `
   opacity: 0.5;
   cursor: not-allowed;
 }
-.my-plugin-toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  min-height: 32px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.my-plugin-toolbar-btn:hover {
-  background: var(--border);
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-}
-.my-plugin-toolbar-btn svg {
-  color: var(--text-muted);
-}
-.my-plugin-toolbar-btn:hover svg {
-  color: var(--text-secondary);
-}
 `;
 
 function useInjectStyles() {
@@ -415,7 +391,7 @@ function ToolbarButton() {
           showToast('Right-clicked the plugin button!', 'success');
         }}
         title="My Plugin"
-        className="my-plugin-toolbar-btn"
+        className="toolbar-icon-btn"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v18" /><path d="M5 10l7-7 7 7" />

@@ -303,32 +303,20 @@ function useInjectStyles() {
 }
 ```
 
-### Toolbar Button Styling
-Inject your own CSS class for toolbar buttons to match the host app's icon buttons (32px height, border, rounded corners). Don't rely on internal host class names — they can change.
+### Host CSS Classes
 
-```css
-.my-plugin-toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  min-height: 32px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.my-plugin-toolbar-btn:hover {
-  background: var(--border);
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-}
-```
+Ship Studio provides CSS classes that plugins can use directly — no need to inject your own styles for common UI patterns.
+
+| Class | Description |
+|-------|-------------|
+| `toolbar-icon-btn` | Icon button for the toolbar (32px height, border, rounded corners, hover states) |
+| `btn-primary` | Primary action button (accent background) |
+| `btn-secondary` | Secondary button (tertiary background, border) |
+
+#### Toolbar Button Example
 
 ```tsx
-<button className="my-plugin-toolbar-btn" title="My Plugin">
+<button className="toolbar-icon-btn" title="My Plugin">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     {/* your icon paths */}
   </svg>
