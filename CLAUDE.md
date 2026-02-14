@@ -304,10 +304,31 @@ function useInjectStyles() {
 ```
 
 ### Toolbar Button Styling
-Use `className="education-button"` for toolbar buttons to match the host app's icon buttons (32px height, border, rounded corners):
+Inject your own CSS class for toolbar buttons to match the host app's icon buttons (32px height, border, rounded corners). Don't rely on internal host class names — they can change.
+
+```css
+.my-plugin-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  min-height: 32px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.my-plugin-toolbar-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+```
 
 ```tsx
-<button className="education-button" title="My Plugin">
+<button className="my-plugin-toolbar-btn" title="My Plugin">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     {/* your icon paths */}
   </svg>
