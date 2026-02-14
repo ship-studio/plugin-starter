@@ -119,7 +119,7 @@ const pluginCSS = `
   align-items: center;
 }
 .my-plugin-modal-body {
-  padding: 0 20px 20px;
+  padding: 20px;
   overflow-y: auto;
   font-size: 13px;
   line-height: 1.5;
@@ -391,10 +391,11 @@ function ToolbarButton() {
           showToast('Right-clicked the plugin button!', 'success');
         }}
         title="My Plugin"
-        className="workspace-tab icon-only"
-        style={{ fontSize: 11, fontWeight: 600, padding: '0 6px', minWidth: 'auto' }}
+        className="education-button"
       >
-        MP
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3v18" /><path d="M5 10l7-7 7 7" />
+        </svg>
       </button>
       {modalOpen && <PluginModal onClose={() => setModalOpen(false)} />}
     </>

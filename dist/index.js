@@ -1,5 +1,5 @@
-import { jsxs, Fragment, jsx } from "react/jsx-runtime";
-import { useState, useEffect, useCallback } from "react";
+import { jsxs, Fragment, jsx } from "data:text/javascript,export const jsx=window.__SHIPSTUDIO_REACT__.createElement;export const jsxs=window.__SHIPSTUDIO_REACT__.createElement;export const Fragment=window.__SHIPSTUDIO_REACT__.Fragment;";
+import { useState, useEffect, useCallback } from "data:text/javascript,export default window.__SHIPSTUDIO_REACT__;export const useState=window.__SHIPSTUDIO_REACT__.useState;export const useEffect=window.__SHIPSTUDIO_REACT__.useEffect;export const useCallback=window.__SHIPSTUDIO_REACT__.useCallback;export const useMemo=window.__SHIPSTUDIO_REACT__.useMemo;export const useRef=window.__SHIPSTUDIO_REACT__.useRef;export const useContext=window.__SHIPSTUDIO_REACT__.useContext;export const createElement=window.__SHIPSTUDIO_REACT__.createElement;export const Fragment=window.__SHIPSTUDIO_REACT__.Fragment;";
 const _w = window;
 function usePluginContext() {
   const React = _w.__SHIPSTUDIO_REACT__;
@@ -56,7 +56,7 @@ const pluginCSS = `
   align-items: center;
 }
 .my-plugin-modal-body {
-  padding: 0 20px 20px;
+  padding: 20px;
   overflow-y: auto;
   font-size: 13px;
   line-height: 1.5;
@@ -287,9 +287,11 @@ function ToolbarButton() {
           showToast("Right-clicked the plugin button!", "success");
         },
         title: "My Plugin",
-        className: "workspace-tab icon-only",
-        style: { fontSize: 11, fontWeight: 600, padding: "0 6px", minWidth: "auto" },
-        children: "MP"
+        className: "education-button",
+        children: /* @__PURE__ */ jsxs("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("path", { d: "M12 3v18" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10l7-7 7 7" })
+        ] })
       }
     ),
     modalOpen && /* @__PURE__ */ jsx(PluginModal, { onClose: () => setModalOpen(false) })

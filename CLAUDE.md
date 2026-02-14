@@ -303,12 +303,14 @@ function useInjectStyles() {
 }
 ```
 
-### Toolbar Button Sizing
-Use `className="workspace-tab icon-only"` for toolbar buttons to match the host app's sizing:
+### Toolbar Button Styling
+Use `className="education-button"` for toolbar buttons to match the host app's icon buttons (32px height, border, rounded corners):
 
 ```tsx
-<button className="workspace-tab icon-only" style={{ fontSize: 11, fontWeight: 600, padding: '0 6px', minWidth: 'auto' }}>
-  MP
+<button className="education-button" title="My Plugin">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {/* your icon paths */}
+  </svg>
 </button>
 ```
 
