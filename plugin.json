@@ -1,0 +1,13 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "0.1.0",
+  "description": "A Ship Studio plugin",
+  "slots": ["toolbar"],
+  "author": "",
+  "repository": "",
+  "min_app_version": "0.3.53",
+  "icon": "",
+  "required_commands": [],
+  "api_version": 1
+}
