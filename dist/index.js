@@ -1,5 +1,5 @@
 import { jsxs, Fragment, jsx } from "data:text/javascript,export const jsx=window.__SHIPSTUDIO_REACT__.createElement;export const jsxs=window.__SHIPSTUDIO_REACT__.createElement;export const Fragment=window.__SHIPSTUDIO_REACT__.Fragment;";
-import { useState, useEffect, useCallback } from "data:text/javascript,export default window.__SHIPSTUDIO_REACT__;export const useState=window.__SHIPSTUDIO_REACT__.useState;export const useEffect=window.__SHIPSTUDIO_REACT__.useEffect;export const useCallback=window.__SHIPSTUDIO_REACT__.useCallback;export const useMemo=window.__SHIPSTUDIO_REACT__.useMemo;export const useRef=window.__SHIPSTUDIO_REACT__.useRef;export const useContext=window.__SHIPSTUDIO_REACT__.useContext;export const createElement=window.__SHIPSTUDIO_REACT__.createElement;export const Fragment=window.__SHIPSTUDIO_REACT__.Fragment;";
+import { useState, useEffect, useRef, useCallback } from "data:text/javascript,export default window.__SHIPSTUDIO_REACT__;export const useState=window.__SHIPSTUDIO_REACT__.useState;export const useEffect=window.__SHIPSTUDIO_REACT__.useEffect;export const useCallback=window.__SHIPSTUDIO_REACT__.useCallback;export const useMemo=window.__SHIPSTUDIO_REACT__.useMemo;export const useRef=window.__SHIPSTUDIO_REACT__.useRef;export const useContext=window.__SHIPSTUDIO_REACT__.useContext;export const createElement=window.__SHIPSTUDIO_REACT__.createElement;export const Fragment=window.__SHIPSTUDIO_REACT__.Fragment;";
 const _w = window;
 function usePluginContext() {
   const React = _w.__SHIPSTUDIO_REACT__;
@@ -27,6 +27,9 @@ function useAppActions() {
 }
 function useTheme() {
   return usePluginContext().theme;
+}
+function useInvoke() {
+  return usePluginContext().invoke;
 }
 const STYLE_ID = "my-plugin-styles";
 const pluginCSS = `
@@ -126,10 +129,15 @@ function PluginModal({ onClose }) {
   const actions = useAppActions();
   const theme = useTheme();
   const ctx = usePluginContext();
+  const invoke = useInvoke();
   const [gitLog, setGitLog] = useState(null);
   const [loadingLog, setLoadingLog] = useState(false);
+  const [branchResult, setBranchResult] = useState(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [storageLoaded, setStorageLoaded] = useState(false);
+  const renderCount = useRef(0);
+  renderCount.current += 1;
   useEffect(() => {
     storage.read().then((data) => {
       setClickCount(typeof data.clickCount === "number" ? data.clickCount : 0);
@@ -164,6 +172,18 @@ function PluginModal({ onClose }) {
     await storage.write({ clickCount: next });
     showToast(`Count saved: ${next}`, "success");
   }, [clickCount, storage, showToast]);
+  const handleListBranches = useCallback(async () => {
+    if (!project) return;
+    setLoadingBranches(true);
+    try {
+      const result = await invoke.call("list_branches", { path: project.path });
+      setBranchResult(JSON.stringify(result, null, 2));
+    } catch (err) {
+      setBranchResult(`Error: ${err}`);
+    } finally {
+      setLoadingBranches(false);
+    }
+  }, [project, invoke]);
   const handleRefreshGit = useCallback(() => {
     actions.refreshGitStatus();
     showToast("Git status refreshed", "success");
@@ -227,6 +247,20 @@ function PluginModal({ onClose }) {
             gitLog !== null && /* @__PURE__ */ jsx("pre", { className: "my-plugin-pre", style: { background: theme.bgTertiary, color: theme.textPrimary, marginTop: 8 }, children: gitLog })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "my-plugin-section", children: [
+            /* @__PURE__ */ jsx("div", { className: "my-plugin-section-title", style: { color: theme.textMuted }, children: "Tauri Commands (invoke.call)" }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                className: "my-plugin-btn",
+                onClick: handleListBranches,
+                disabled: loadingBranches || !project,
+                style: { background: theme.action, color: theme.actionText },
+                children: loadingBranches ? "Loading..." : "List Branches"
+              }
+            ),
+            branchResult !== null && /* @__PURE__ */ jsx("pre", { className: "my-plugin-pre", style: { background: theme.bgTertiary, color: theme.textPrimary, marginTop: 8 }, children: branchResult })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "my-plugin-section", children: [
             /* @__PURE__ */ jsx("div", { className: "my-plugin-section-title", style: { color: theme.textMuted }, children: "Persistent Storage" }),
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
               /* @__PURE__ */ jsx(
@@ -261,12 +295,25 @@ function PluginModal({ onClose }) {
                 "button",
                 {
                   className: "my-plugin-btn",
+                  onClick: () => actions.focusTerminal(),
+                  style: { background: theme.bgTertiary, color: theme.textPrimary },
+                  children: "Focus Terminal"
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  className: "my-plugin-btn",
                   onClick: () => actions.openUrl("https://github.com/ship-studio"),
                   style: { background: theme.bgTertiary, color: theme.textPrimary },
                   children: "Open GitHub"
                 }
               )
             ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { fontSize: 11, color: theme.textMuted, textAlign: "right" }, children: [
+            "Renders: ",
+            renderCount.current
           ] })
         ] })
       ]

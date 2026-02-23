@@ -8,6 +8,6 @@
   "repository": "",
   "min_app_version": "0.3.53",
   "icon": "",
-  "required_commands": [],
+  "required_commands": ["list_branches"],
   "api_version": 1
 }

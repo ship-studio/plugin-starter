@@ -1,11 +1,11 @@
 /**
  * Ship Studio Plugin Starter
  *
- * A working example that demonstrates every plugin SDK capability.
+ * A working example that demonstrates the full plugin API.
  * Delete what you don't need and build from here.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ---------------------------------------------------------------------------
 // Plugin Context — inline the SDK's usePluginContext() pattern so we don't
@@ -85,6 +85,7 @@ function useToast() { return usePluginContext().actions.showToast; }
 function usePluginStorage() { return usePluginContext().storage; }
 function useAppActions() { return usePluginContext().actions; }
 function useTheme() { return usePluginContext().theme; }
+function useInvoke() { return usePluginContext().invoke; }
 
 // ---------------------------------------------------------------------------
 // CSS injection helper
@@ -195,10 +196,18 @@ function PluginModal({ onClose }: { onClose: () => void }) {
   const theme = useTheme();
   const ctx = usePluginContext();
 
+  const invoke = useInvoke();
+
   const [gitLog, setGitLog] = useState<string | null>(null);
   const [loadingLog, setLoadingLog] = useState(false);
+  const [branchResult, setBranchResult] = useState<string | null>(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
   const [clickCount, setClickCount] = useState<number>(0);
   const [storageLoaded, setStorageLoaded] = useState(false);
+
+  // useRef demo — track how many times the modal has rendered
+  const renderCount = useRef(0);
+  renderCount.current += 1;
 
   // Load persisted click count on mount
   useEffect(() => {
@@ -239,6 +248,19 @@ function PluginModal({ onClose }: { onClose: () => void }) {
     await storage.write({ clickCount: next });
     showToast(`Count saved: ${next}`, 'success');
   }, [clickCount, storage, showToast]);
+
+  const handleListBranches = useCallback(async () => {
+    if (!project) return;
+    setLoadingBranches(true);
+    try {
+      const result = await invoke.call('list_branches', { path: project.path });
+      setBranchResult(JSON.stringify(result, null, 2));
+    } catch (err) {
+      setBranchResult(`Error: ${err}`);
+    } finally {
+      setLoadingBranches(false);
+    }
+  }, [project, invoke]);
 
   const handleRefreshGit = useCallback(() => {
     actions.refreshGitStatus();
@@ -324,6 +346,26 @@ function PluginModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
 
+          {/* Tauri Commands Demo (invoke.call) */}
+          <div className="my-plugin-section">
+            <div className="my-plugin-section-title" style={{ color: theme.textMuted }}>
+              Tauri Commands (invoke.call)
+            </div>
+            <button
+              className="my-plugin-btn"
+              onClick={handleListBranches}
+              disabled={loadingBranches || !project}
+              style={{ background: theme.action, color: theme.actionText }}
+            >
+              {loadingBranches ? 'Loading...' : 'List Branches'}
+            </button>
+            {branchResult !== null && (
+              <pre className="my-plugin-pre" style={{ background: theme.bgTertiary, color: theme.textPrimary, marginTop: 8 }}>
+                {branchResult}
+              </pre>
+            )}
+          </div>
+
           {/* Storage Demo */}
           <div className="my-plugin-section">
             <div className="my-plugin-section-title" style={{ color: theme.textMuted }}>
@@ -359,12 +401,24 @@ function PluginModal({ onClose }: { onClose: () => void }) {
               </button>
               <button
                 className="my-plugin-btn"
+                onClick={() => actions.focusTerminal()}
+                style={{ background: theme.bgTertiary, color: theme.textPrimary }}
+              >
+                Focus Terminal
+              </button>
+              <button
+                className="my-plugin-btn"
                 onClick={() => actions.openUrl('https://github.com/ship-studio')}
                 style={{ background: theme.bgTertiary, color: theme.textPrimary }}
               >
                 Open GitHub
               </button>
             </div>
+          </div>
+
+          {/* Render count (useRef demo) */}
+          <div style={{ fontSize: 11, color: theme.textMuted, textAlign: 'right' }}>
+            Renders: {renderCount.current}
           </div>
         </div>
       </div>

@@ -12,6 +12,8 @@ Ship Studio plugins are **React components** that render inside the host app's U
 3. The module's exported `slots` components are rendered in the corresponding UI locations
 4. Each plugin gets its own React Context with project data, shell access, storage, etc.
 
+> **Important: `dist/index.js` must be committed to your repo.** Ship Studio installs plugins by cloning the repository. It does **not** run `npm install` or `npm run build` — it expects the built bundle to already exist. If `dist/index.js` is missing from the repo (e.g. because `dist/` was added to `.gitignore`), users will get a "Plugin bundle not found" error. **Do not add `dist/` to `.gitignore`.**
+
 **Lifecycle:** install/link → load JS → `onActivate()` → render slot components → `onDeactivate()` → unload
 
 ## 2. Manifest Reference (`plugin.json`)
@@ -178,6 +180,34 @@ function useTheme()         { return usePluginContext().theme; }
 function useInvoke()        { return usePluginContext().invoke; }
 ```
 
+These are optional convenience wrappers — you don't need to define all of them. Just add the ones your plugin actually uses.
+
+### Available React Hooks
+
+The host app exports these React hooks via the shared `window.__SHIPSTUDIO_REACT__` global. You can import them normally — the Vite config rewrites the imports at build time:
+
+```typescript
+import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
+```
+
+All standard React hooks work. The `useContext` hook is used internally by `usePluginContext()` — you typically won't need it directly.
+
+### TypeScript Types
+
+This starter template inlines the `PluginContextValue` interface directly in `src/index.tsx` so there are no extra dependencies. If you prefer importing types from a package, you can install the SDK as a dev dependency:
+
+```bash
+npm install -D @shipstudio/plugin-sdk
+```
+
+Then import the types:
+
+```typescript
+import type { PluginContextValue } from '@shipstudio/plugin-sdk';
+```
+
+The SDK package also exports the convenience hooks (`useProject`, `useShell`, etc.), but the inline versions in this template work identically. Use whichever approach you prefer.
+
 ## 5. Available Tauri Commands (for `invoke.call()`)
 
 To use `invoke.call()`, you must list the commands in your manifest's `required_commands` array. Only these commands are available to plugins:
@@ -236,11 +266,16 @@ The Vite config handles the trickiest part of plugin development: sharing React 
 - `minify: false` — keep source readable for debugging
 - `emptyOutDir: true` — clean dist/ on each build
 
+**TypeScript config (`tsconfig.json`):**
+- `declaration: false` — plugins don't need `.d.ts` files. The host app loads `dist/index.js` at runtime, not as a library dependency. Type checking is for your own development experience only.
+
 **Commands:**
 ```bash
 npm run build   # Build dist/index.js
 npm run dev     # Watch mode — rebuilds on file changes
 ```
+
+> **Remember to commit `dist/index.js` after every build.** Ship Studio installs plugins by cloning the repo directly — it does not run any build steps. If you forget to commit the updated bundle, users installing your plugin will get the old version (or "Plugin bundle not found" if it was never committed).
 
 ## 7. Development Workflow
 
@@ -313,6 +348,16 @@ Ship Studio provides CSS classes that plugins can use directly — no need to in
 | `btn-primary` | Primary action button (accent background) |
 | `btn-secondary` | Secondary button (tertiary background, border) |
 
+### Which Approach to Use
+
+| Approach | When to use |
+|----------|-------------|
+| **Host CSS classes** (`toolbar-icon-btn`, `btn-primary`) | Toolbar buttons and standard UI elements. Preferred — zero CSS to maintain. |
+| **CSS variables** (`var(--bg-secondary)`) | Injected stylesheets for custom layout/components. Use the CSS injection pattern above. |
+| **Inline theme tokens** (`theme.bgSecondary`) | One-off dynamic styles, conditional colors, or styles computed in JS. |
+
+You can mix approaches. The example plugin uses host classes for the toolbar button, injected CSS for modal layout, and inline theme tokens for colors.
+
 #### Toolbar Button Example
 
 ```tsx
@@ -378,7 +423,72 @@ useEffect(() => {
 </div>
 ```
 
-## 10. Constraints & Limitations
+### Use invoke.call() for Tauri commands
+```tsx
+const invoke = useInvoke();
+
+// Must list "list_branches" in plugin.json required_commands
+const branches = await invoke.call('list_branches', { path: project.path });
+```
+
+`invoke.call()` is for direct Tauri command access (git operations, IDE control, etc.). For general CLI work, prefer `shell.exec()` instead. See the full command list in section 5.
+
+### Handle async storage loading
+```tsx
+const storage = usePluginStorage();
+const [data, setData] = useState<MyData | null>(null);
+
+useEffect(() => {
+  storage.read().then(stored => {
+    setData(stored.myKey as MyData ?? defaultValue);
+  });
+}, []);
+
+// Guard renders while loading
+if (data === null) return <span>Loading...</span>;
+```
+
+`storage.read()` is async — always handle the loading state. Don't assume storage is available on first render.
+
+### Keep module scope light
+
+The plugin has a **10-second load timeout**. Heavy work at module scope (top level of the file) blocks loading. Keep `onActivate` fast too.
+
+```tsx
+// BAD — blocks plugin load
+const bigData = computeExpensiveThingSync();
+
+// GOOD — defer to effect or callback
+function MyComponent() {
+  const [data, setData] = useState(null);
+  useEffect(() => { loadExpensiveThing().then(setData); }, []);
+}
+```
+
+Don't fetch data, do heavy computation, or set up long-running processes at the top level of your module. Do it inside components or in `onActivate`.
+
+## 10. Testing Plugins
+
+Ship Studio doesn't provide a test harness, but you can test plugin logic in isolation:
+
+**Unit test pure logic:** Extract business logic into plain functions (no React, no context) and test with any test runner (Vitest, Jest, etc.).
+
+**Mock the context for component tests:**
+```tsx
+const mockContext: PluginContextValue = {
+  pluginId: 'test-plugin',
+  project: { name: 'test', path: '/tmp/test', currentBranch: 'main', hasUncommittedChanges: false },
+  actions: { showToast: vi.fn(), refreshGitStatus: vi.fn(), refreshBranches: vi.fn(), focusTerminal: vi.fn(), openUrl: vi.fn() },
+  shell: { exec: vi.fn().mockResolvedValue({ stdout: '', stderr: '', exit_code: 0 }) },
+  storage: { read: vi.fn().mockResolvedValue({}), write: vi.fn().mockResolvedValue(undefined) },
+  invoke: { call: vi.fn().mockResolvedValue(null) },
+  theme: { bgPrimary: '#000', bgSecondary: '#111', bgTertiary: '#222', textPrimary: '#fff', textSecondary: '#ccc', textMuted: '#888', border: '#333', accent: '#0af', accentHover: '#08d', action: '#0af', actionHover: '#08d', actionText: '#fff', error: '#f00', success: '#0f0' },
+};
+```
+
+**Manual testing:** Link the plugin in Ship Studio (Plugin Manager → "Link Dev Plugin"), use `npm run dev` for watch mode, and click "Reload" after changes. Open dev tools (`Cmd+Option+I`) to see console output.
+
+## 11. Constraints & Limitations
 
 - **Only `toolbar` slot** is currently available. Plugins render as buttons in the workspace toolbar.
 - **No direct filesystem access.** Use `shell.exec` with `cat`, `ls`, etc. to read files.
@@ -390,3 +500,49 @@ useEffect(() => {
 - **Don't bundle React.** The Vite config externalizes it. Bundling your own copy will break hooks.
 - **Keep bundles small.** The JS is loaded as a string over IPC, then imported via Blob URL.
 - **Plugin crashes are caught** by error boundaries, but show an ugly "!" indicator in the toolbar. Handle errors gracefully.
+- **`dist/index.js` must be in the repo.** Do not add `dist/` to `.gitignore`. Ship Studio clones the repo as-is and does not run any build steps.
+
+## 12. Publishing & CI/CD
+
+### Manual publishing
+
+After every source change, build and commit the bundle:
+
+```bash
+npm run build
+git add dist/index.js
+git commit -m "Build plugin bundle"
+git push
+```
+
+### Automated with GitHub Actions
+
+Add `.github/workflows/build.yml` to auto-build on push:
+
+```yaml
+name: Build Plugin
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'vite.config.ts', 'package.json']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Commit dist/index.js if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/index.js
+          git diff --cached --quiet || git commit -m "chore: rebuild plugin bundle"
+          git push
+```
+
+This ensures `dist/index.js` is always up to date even if a developer forgets to build locally.
